@@ -1,0 +1,36 @@
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Model files (these are large - don't upload to GitHub)
+*.pth
+*.pt
+*.h5
+*.model
+
+# Data files
+*.pkl
+*.pickle
+*.npy
+*.npz
+
+# Logs (we'll keep them locally)
+*.log
+logs/
