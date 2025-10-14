@@ -157,10 +157,11 @@ def train_dqn(strategy_name="strategy1_baseline"):
     df = pd.DataFrame({"Episode": range(1, len(rewards_per_episode)+1),
                        "Reward": rewards_per_episode})
     df.to_csv("experiments/strategy1/results.csv", index=False)
-    print("📊 Training log saved to experiments/strategy1/results.csv")
+    print("Training log saved to experiments/strategy1/results.csv")
 
     env.close()
 
 
 if __name__ == "__main__":
     train_dqn(strategy_name="strategy1_baseline")
+
