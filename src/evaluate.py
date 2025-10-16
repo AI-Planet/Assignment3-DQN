@@ -1,16 +1,15 @@
 import torch
 import torch.nn as nn
-import torch.optim as optim
 import numpy as np
-import random
 import gym
-from collections import deque
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
 
 
-# This is the 'standard' neural network
+# ===============================
+# Q-Network (same as training)
+# ===============================
 class QNetwork(nn.Module):
     def __init__(self, state_dim, action_dim):
         super(QNetwork, self).__init__()
@@ -24,9 +23,11 @@ class QNetwork(nn.Module):
         return self.fc3(x)
 
 
+# ===============================
+# Bar plot for results
+# ===============================
 def bar_plot(results):
     data = results[0]
-
     avgs = {k: v for k, v in data.items() if k.startswith('Avg_')}
     stds = {k.replace('Avg', 'Std'): data[k.replace('Avg', 'Std')] for k in avgs.keys()}
 
@@ -38,33 +39,29 @@ def bar_plot(results):
 
     plt.figure(figsize=(8, 5))
     plt.bar(range(len(avg_values)), avg_values, yerr=std_values, capsize=5, alpha=0.7)
-    plt.xticks(range(len(avg_values)), [k.split('_')[1] for k in sorted_keys])
-    plt.xticks(rotation = 45)
+    plt.xticks(range(len(avg_values)), [k.split('_')[1] for k in sorted_keys], rotation=45)
     plt.xlabel('Pole length')
-    plt.ylabel('Episode length')
-    plt.title(f'Average score over all pole lengths = {round(overall_avg, 0)}')
-
+    plt.ylabel('Average episode length')
+    plt.title(f'Average score over all pole lengths = {round(overall_avg, 1)}')
+    plt.tight_layout()
     plt.savefig("bar_plot.png")
     plt.show()
 
 
-# Test the agent after training
-def test_pole_length(env, q_network):
-    """
-    This function runs your trained network on a specific pole length
-    You are not allowed to change this function
-    """
-
-    wind = 25
+# ===============================
+# Testing the agent
+# ===============================
+def test_pole_length(env, q_network, device):
     state = env.reset()[0]
     state = torch.tensor(state, dtype=torch.float32).unsqueeze(0).to(device)
     done = False
     total_reward = 0
-
+    wind = 25
 
     while not done:
+        with torch.no_grad():
+            action = q_network(state).argmax().item()
 
-        action = q_network(state).argmax().item()
         next_state, reward, done, _, __ = env.step(action)
         next_state = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(device)
         state = next_state
@@ -72,7 +69,6 @@ def test_pole_length(env, q_network):
 
         if total_reward >= 500 and total_reward <= 1000:
             if total_reward % wind == 0:
-
                 env.unwrapped.force_mag = 75
 
         if total_reward > 1000:
@@ -81,65 +77,62 @@ def test_pole_length(env, q_network):
     return total_reward
 
 
-
+# ===============================
+# Main test script
+# ===============================
 def test_script():
-    """
-    Function that simulates the trained NN over 30 different pole lengths, 10 times per length.
-    """
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"🧠 Using device: {device}")
 
     pole_lengths = np.linspace(0.4, 1.8, 30)
     all_results = []
 
-    # import here your trained neural network
-    trained_nn = 'strategy1_baseline.pth'
+    #path to your model (ONLY the filename, not "weights/weights/")
+    trained_nn = "strategy1_baseline.pth"
 
     results = {}
     total_score = 0
 
     for length in pole_lengths:
-        print(length)
+        print(f"Testing pole length: {round(length, 2)}")
+        pole_scores = []
 
-        pole_score = []
-
-        for x in range(10):
-
-            env = gym.make('CartPole-v1')
+        for _ in range(10):
+            env = gym.make("CartPole-v1")
             env.unwrapped.length = length
 
             state_dim = env.observation_space.shape[0]
             action_dim = env.action_space.n
-            loaded_model = QNetwork(state_dim, action_dim)
-            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            state_dict = torch.load(os.path.join("weights", trained_nn), map_location=device)
-            loaded_model.load_state_dict(state_dict)
-            loaded_model.to(device)
 
-            # Switch to evaluation mode
-            loaded_model.eval()  # Use for inference
-            score = test_pole_length(env, loaded_model)
-            pole_score.append(score)
+            # Load model
+            model_path = os.path.join("weights", trained_nn)
+            q_net = QNetwork(state_dim, action_dim).to(device)
 
-        mean_score = np.mean(np.array(pole_score))
-        std_score = np.std(np.array(pole_score))
+            # Safe loading on CPU/GPU
+            state_dict = torch.load(model_path, map_location=device)
+            q_net.load_state_dict(state_dict)
+            q_net.eval()
 
+            # Run test
+            score = test_pole_length(env, q_net, device)
+            pole_scores.append(score)
+
+        mean_score = np.mean(pole_scores)
+        std_score = np.std(pole_scores)
         total_score += mean_score
 
-        results[f"Avg_{round(length, 2)}"] = mean_score  # Store just the mean
-        results[f"Std_{round(length, 2)}"] = std_score  # Store std separately
+        results[f"Avg_{round(length, 2)}"] = mean_score
+        results[f"Std_{round(length, 2)}"] = std_score
 
-    results["Total"] = total_score  # Store just the mean
+    results["Total"] = total_score
     all_results.append(results)
 
     bar_plot(all_results)
 
-    # Convert list to DataFrame
     df = pd.DataFrame(all_results)
     df.to_excel("experiment_results.xlsx", index=False)
+    print("Results saved to experiment_results.xlsx and bar_plot.png")
+
 
 if __name__ == "__main__":
     test_script()
-
-
-
-
-
