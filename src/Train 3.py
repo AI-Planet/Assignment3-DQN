@@ -80,16 +80,15 @@ class ReplayMemory:
 class QNetwork(nn.Module):
     def __init__(self, state_dim: int, action_dim: int):
         super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(state_dim, 128),
-            nn.ReLU(),
-            nn.Linear(128, 128),
-            nn.ReLU(),
-            nn.Linear(128, action_dim)
-        )
+        self.fc1 = nn.Linear(state_dim, 128)
+        self.fc2 = nn.Linear(128, 128)
+        self.fc3 = nn.Linear(128, action_dim)
+
 
     def forward(self, x):
-        return self.net(x)
+        x = torch.relu(self.fc1(x))
+        x = torch.relu(self.fc2(x))
+        return self.fc3(x)
 
 def select_action(policy_net, state, n_actions, steps_done, eps_start, eps_end, eps_decay, device):
     eps_threshold = eps_end + (eps_start - eps_end) * math.exp(-1.0 * steps_done / eps_decay)
@@ -130,7 +129,7 @@ def optimize_model(policy_net, target_net, memory: ReplayMemory, optimizer, batc
 # -----------------------------------------------------------
 
 def train_strategy3(
-        episodes: int = 300,
+        episodes: int = 5000,
         seed: int = 0,
         gamma: float = 0.99,
         lr: float = 1e-3,
@@ -232,7 +231,7 @@ def train_strategy3(
 
 def parse_args():
     p = argparse.ArgumentParser(description="DQN with Strategy 3 reward shaping (single file)")
-    p.add_argument("--episodes", type=int, default=300)
+    p.add_argument("--episodes", type=int, default=5000)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--gamma", type=float, default=0.99)
     p.add_argument("--lr", type=float, default=1e-3)
