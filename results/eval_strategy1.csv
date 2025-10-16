@@ -1,0 +1,2 @@
+accuracy,loss,total_parameters,layers_evaluated,status,model_file,evaluation_timestamp,environment,git_ready
+0.9047250493351892,0.1572506857426672,17410,6,success,strategy1_baseline.pth,2025-10-16T17:29:20.568191,Kaggle,True
