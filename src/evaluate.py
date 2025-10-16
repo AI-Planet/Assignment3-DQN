@@ -9,7 +9,7 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 
-trained_nn = 'strategy1_baseline.pth'
+
 # This is the 'standard' neural network
 class QNetwork(nn.Module):
     def __init__(self, state_dim, action_dim):
@@ -57,7 +57,7 @@ def test_pole_length(env, q_network):
 
     wind = 25
     state = env.reset()[0]
-    state = torch.tensor(state, dtype=torch.float32).unsqueeze(0)
+    state = torch.tensor(state, dtype=torch.float32).unsqueeze(0).to(device)
     done = False
     total_reward = 0
 
@@ -66,7 +66,7 @@ def test_pole_length(env, q_network):
 
         action = q_network(state).argmax().item()
         next_state, reward, done, _, __ = env.step(action)
-        next_state = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
+        next_state = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(device)
         state = next_state
         total_reward += reward
 
@@ -109,7 +109,10 @@ def test_script():
             state_dim = env.observation_space.shape[0]
             action_dim = env.action_space.n
             loaded_model = QNetwork(state_dim, action_dim)
-            loaded_model.load_state_dict(torch.load("weights/" + trained_nn, weights_only=True))
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            state_dict = torch.load(os.path.join("weights", trained_nn), map_location=device)
+            loaded_model.load_state_dict(state_dict)
+            loaded_model.to(device)
 
             # Switch to evaluation mode
             loaded_model.eval()  # Use for inference
@@ -135,6 +138,7 @@ def test_script():
 
 if __name__ == "__main__":
     test_script()
+
 
 
 
