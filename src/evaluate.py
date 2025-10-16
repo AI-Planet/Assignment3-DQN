@@ -91,7 +91,7 @@ def test_script():
     all_results = []
 
     # import here your trained neural network
-    trained_nn = 'weights/strategy1_baseline.pth'
+    trained_nn = 'strategy1_baseline.pth'
 
     results = {}
     total_score = 0
@@ -135,5 +135,6 @@ def test_script():
 
 if __name__ == "__main__":
     test_script()
+
 
 
