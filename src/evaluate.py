@@ -9,7 +9,7 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 
-
+trained_nn = 'strategy1_baseline.pth'
 # This is the 'standard' neural network
 class QNetwork(nn.Module):
     def __init__(self, state_dim, action_dim):
@@ -135,6 +135,7 @@ def test_script():
 
 if __name__ == "__main__":
     test_script()
+
 
 
 
